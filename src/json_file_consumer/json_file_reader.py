@@ -1,7 +1,4 @@
-from .task_dirchecker import DirCheckerTask
-from .task_elksumbmitjson import ElkSubmitJsonTask
-from .task_readjsonfile import ReadJsonFileTask
-from .task_rmfiles import ReadJsonFileTask
+from task_blox import TASK_BLOX_MAPPER
 
 
 EVE_PATTERN = '.*eve-\d{4}-\d{2}-\d{2}-\d{2}:\d{2}\.json'
@@ -140,3 +137,4 @@ class JsonFileBeat(object):
     @classmethod
     def parse_toml_dict(cls, toml_dict):
         
+

@@ -1,8 +1,35 @@
-[json-file-beat]
-    poll_time = 60 # in seconds
-    remove-after-read = true
-    target_directory = '/var/log/suricata'
-    append-log = false
-    hostname = 'docker-dev'
-    port = 5002
-    log_level = "DEBUG"
+[json-file-consumer]
+    [json-file-consumer.dircheckers]
+        [json-file-consumer.dircheckers.0]
+            name = '0'
+            task = 'dirchecker'
+            target-directory = '/var/logs/suricata/'
+            name-pattern = '.*eve-\d{4}-\d{2}-\d{2}-\d{2}:\d{2}\.json'
+            poll-time = 20
+
+    [json-file-consumer.readjsonfiles]
+        [json-file-consumer.readjsonfiles.0]
+            name = '0'
+            task = 'readjsonfiles'
+            poll-time = 20
+
+        [json-file-consumer.readjsonfiles.1]
+            name = '1'
+            task = 'readjsonfiles'
+            poll-time = 20
+
+    [json-file-consumer.elksubmitjson]
+        [json-file-consumer.elksubmitjson.0]
+            task = 'elksubmitjson'
+            poll-time = 20
+            host = 'elk-dev'
+            port = 5002
+        [json-file-consumer.elksubmitjson.1]
+            task = 'elksubmitjson'
+            poll-time = 20
+            host = 'elk-prod'
+            port = 5002
+
+    [json-file-consumer.rmfiles]
+        task = 'rmfiles'
+        poll-time = 20
