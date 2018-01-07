@@ -1,0 +1,8 @@
+[json-file-beat]
+    poll_time = 60 # in seconds
+    remove-after-read = true
+    target_directory = '/var/log/suricata'
+    append-log = false
+    hostname = 'docker-dev'
+    port = 5002
+    log_level = "DEBUG"
