@@ -1,13 +1,13 @@
+from json_file_consumer.consumer_service import ConsumerService
 import logging
 import argparse
 import sys
+import toml
 
-SALT = 'salt'
-KEY = 'this is a default key but not the best idea!'
 
-CONFIG="config.toml"
-
-parser = argparse.ArgumentParser(description='Run the json-file-consumer and monitor.')
+CONFIG = "config.toml"
+description = 'Run the json-file-consumer and monitor.'
+parser = argparse.ArgumentParser(description=description)
 
 parser.add_argument('-config', type=str, default=CONFIG,
                     help='configuration file for the service')
@@ -18,8 +18,7 @@ V = 'log levels: INFO: %d, DEBUG: %d, WARRNING: %d' % (logging.INFO,
 parser.add_argument('-log_level', type=int, default=logging.DEBUG,
                     help=V)
 
-parser.add_argument('-encrypt_key', type=str, default=logging.DEBUG,
-                    help=V)
+parser.add_argument('-config', type=str, default=None)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -30,12 +29,16 @@ if __name__ == "__main__":
     ch.setFormatter(formatter)
     logging.getLogger().addHandler(ch)
 
-    clownsvc = ClownFactory.parse(args.config)
+    if args.config is None:
+        raise Exception("A path to the config file is required")
+
+    toml_dict = toml.load(open(args.config))
+    csvc = ConsumerService.parse_toml(toml_dict)
 
     try:
         logging.debug("Starting the syslog listener")
-        service.serve_forever(poll_interval=0.5)
+        csvc.run_forever()
     except (IOError, SystemExit):
-        raise
+        csvc.stop()
     except KeyboardInterrupt:
-        raise
+        csvc.stop()

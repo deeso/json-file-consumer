@@ -43,6 +43,11 @@ class ConsumerService(object):
         self.rmfiles_poll_thread = None
         self.elksubmit_poll_thread = None
 
+    def run_forever(self):
+        self.start()
+        while True:
+            time.sleep(60)
+
     def start_dircheckers(self):
         for obj in self.dircheckers:
             obj.start()
