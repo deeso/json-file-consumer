@@ -4,6 +4,8 @@ from threading import Thread
 import os
 import time
 
+from json_file_consumer import logger
+
 EVE_PATTERN = '.*eve-\d{4}-\d{2}-\d{2}-\d{2}:\d{2}\.json'
 
 
@@ -49,34 +51,42 @@ class ConsumerService(object):
             time.sleep(60)
 
     def start_dircheckers(self):
+        logger.info("Starting the directory checkers")
         for obj in self.dircheckers:
             obj.start()
 
     def start_jsonfilereaders(self):
+        logger.info("Starting the file readers")
         for obj in self.jsonfilereaders:
             obj.start()
 
     def start_elksubmitjsons(self):
+        logger.info("Starting the elk submitters")
         for obj in self.elksubmitjsons:
             obj.start()
 
     def start_rmfiles(self):
+        logger.info("Starting the file rm'ers")
         if self.rmfiles is not None:
             self.rmfiles.start()
 
     def stop_dircheckers(self):
+        logger.info("Stopping the dircheckers")
         for obj in self.dircheckers:
             obj.stop()
 
     def stop_jsonfilereaders(self):
+        logger.info("Stopping the json readers")
         for obj in self.jsonfilereaders:
             obj.stop()
 
     def stop_elksubmitjsons(self):
+        logger.info("Stopping the elk submitters")
         for obj in self.elksubmitjsons:
             obj.stop()
 
     def stop_rmfiles(self):
+        logger.info("Stopping the rm'ers")
         if self.rmfiles is not None:
             self.rmfiles.stop()
 

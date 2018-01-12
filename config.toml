@@ -24,11 +24,6 @@
             poll-time = 20
             host = 'elk-dev'
             port = 5002
-        [json-file-consumer.elksubmitjson.1]
-            task = 'elksubmitjson'
-            poll-time = 20
-            host = 'elk-prod'
-            port = 5002
 
     [json-file-consumer.rmfiles]
         task = 'rmfiles'

@@ -1,0 +1,8 @@
+BASE_CUR=$PWD   
+EVE_FILE=eve-files.zip
+EVE_DATA_ZIP=$BASE_CUR/$EVE_FILE
+BASE_TEST=$BASE_CUR/"testing__"
+SIMULATED="/var/log/suricata/"
+UNZIP_DIR=$BASE_TEST/$SIMULATED
+
+rm -rf $BASE_TEST 
