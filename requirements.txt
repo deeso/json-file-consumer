@@ -1,3 +1,3 @@
 toml
 regex
-https://github.com/deeso/task-blox/tarball/master#egg=task-blox-1.0.0
+https://github.com/deeso/task-blox/tarball/master#egg=task-blox
