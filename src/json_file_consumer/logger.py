@@ -44,5 +44,6 @@ def error(msg):
 def warning(msg):
     logger().warning(msg)
 
+
 def critical(msg):
     logger().critical(msg)
