@@ -22,7 +22,7 @@
         [json-file-consumer.elksubmitjson.0]
             task = 'elksubmitjson'
             poll-time = 20
-            host = 'elk-dev'
+            host = 'REPLACE_WITH_HOSTNAME_OR_IP'
             port = 5002
 
     [json-file-consumer.rmfiles]

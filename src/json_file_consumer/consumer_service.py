@@ -1,20 +1,26 @@
-from task_blox import TASK_BLOX_MAPPER
-from multiprocessing import Queue
 from threading import Thread
 import os
 import time
 import toml
+import logging
 
 from json_file_consumer import logger
+from task_blox import TASK_BLOX_MAPPER
+from multiprocessing import Queue
 
-EVE_PATTERN = '.*eve-\d{4}-\d{2}-\d{2}-\d{2}:\d{2}\.json'
 
+class JsonConsumerService(object):
+    KEY = 'json-consumer-service'
 
-class ConsumerService(object):
+    @classmethod
+    def key(cls):
+        return cls.KEY.lower()
 
     def __init__(self, dircheckers=[], jsonfilereaders=[],
-                 rmfiles=None, elksubmitjsons=[], poll_time=20):
+                 rmfiles=None, elksubmitjsons=[], poll_time=20,
+                 log_level=logging.DEBUG, log_name=KEY.lower()):
 
+        logger.init_logger(name=log_name, log_level=log_level)
         self.poll_time = poll_time
         self.dircheckers = dircheckers
 
@@ -247,7 +253,7 @@ class ConsumerService(object):
         try:
             return cls.parse_toml(toml.load(open(toml_file)))
         except:
-            raise
+            raise Exception("Unable to parse the provided configuration file")
 
     @classmethod
     def parse_toml(this_cls, toml_dict):
@@ -257,6 +263,9 @@ class ConsumerService(object):
             cs_toml = toml_dict.get('json-file-consumer')
 
         poll_time = cs_toml.get('poll-time', 20)
+        log_level = cs_toml.get('log-level', logging.INFO)
+        log_name = cs_toml.get('log-name', this_cls.key())
+
         dircheckers = []
         jsonfilereaders = []
         rmfiles = None
@@ -300,5 +309,7 @@ class ConsumerService(object):
             'rmfiles': rmfiles,
             'elksubmitjsons': elksubmitjsons,
             'poll_time': poll_time,
+            'log_level': log_level,
+            'log_name': log_name
         }
         return this_cls(**kargs)
