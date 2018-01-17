@@ -1,4 +1,4 @@
-from json_file_consumer.consumer_service import ConsumerService
+from json_file_consumer.consumer_service import JsonConsumerService
 from json_file_consumer import logger
 import argparse
 import os
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         except:
             raise Exception("Invalid path to the config file is required")
 
-    csvc = ConsumerService.parse_toml_file(args.config)
+    csvc = JsonConsumerService.parse_toml_file(args.config)
 
     try:
         logger.debug(name=csvc.key()).info("Starting the syslog listener")
