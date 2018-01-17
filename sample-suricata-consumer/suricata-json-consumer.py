@@ -26,7 +26,7 @@ if __name__ == "__main__":
     csvc = JsonConsumerService.parse_toml_file(args.config)
 
     try:
-        logger.debug(name=csvc.key()).info("Starting the syslog listener")
+        logger.logger(name=csvc.key()).info("Starting the syslog listener")
         csvc.run_forever()
     except (IOError, SystemExit):
         csvc.stop()
