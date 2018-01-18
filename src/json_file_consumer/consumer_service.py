@@ -137,8 +137,8 @@ class JsonConsumerService(object):
     def add_file_jsonfilereader(self, filename):
         if len(self.jsonfilereaders) == 0:
             logger.error("No jsonfilereaders have been defined")
-        # jfr = self.jsonfilereaders[self.jfr_pos % self.l_jfr_pos]
-        jfr = self.jsonfilereaders[0]
+        jfr = self.jsonfilereaders[self.jfr_pos % self.l_jfr_pos]
+        # jfr = self.jsonfilereaders[0]
         jfr.add_filename(filename)
         self.jfr_pos += 1
 
