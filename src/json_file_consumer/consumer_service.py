@@ -66,6 +66,7 @@ class JsonConsumerService(object):
         t = Thread(target=self.dirchecker_poll)
         self.dirchecker_poll_thread = t
         t.start()
+        logger.info("Starting the directory checkers..completed")
 
     def start_jsonfilereaders(self):
         self.keep_running = True
@@ -76,6 +77,7 @@ class JsonConsumerService(object):
         t = Thread(target=self.jsonfilereaders_poll)
         self.jsonreader_poll_thread = t
         t.start()
+        logger.info("Starting the file readers..completed")
 
     def start_elksubmitjsons(self):
         logger.info("Starting the elk submitters")
@@ -85,6 +87,7 @@ class JsonConsumerService(object):
         t = Thread(target=self.elksubmitjson_poll)
         self.elksubmit_poll_thread = t
         t.start()
+        logger.info("Starting the json submitters..completed")
 
     def start_rmfiles(self):
         logger.info("Starting the file rm'ers")
@@ -93,6 +96,7 @@ class JsonConsumerService(object):
             t = Thread(target=self.rmfiles_poll)
             self.rmfiles_poll_thread = t
             t.start()
+        logger.info("Starting the file removers..completed")
 
     def stop_dircheckers(self):
         logger.info("Stopping the dircheckers")
@@ -133,7 +137,8 @@ class JsonConsumerService(object):
     def add_file_jsonfilereader(self, filename):
         if len(self.jsonfilereaders) == 0:
             logger.error("No jsonfilereaders have been defined")
-        jfr = self.jsonfilereaders[self.jfr_pos % self.l_jfr_pos]
+        # jfr = self.jsonfilereaders[self.jfr_pos % self.l_jfr_pos]
+        jfr = self.jsonfilereaders[0]
         jfr.add_filename(filename)
         self.jfr_pos += 1
 
@@ -194,9 +199,9 @@ class JsonConsumerService(object):
     def start(self):
         self.keep_running = True
         self.start_dircheckers()
-        self.start_jsonfilereaders()
         self.start_elksubmitjsons()
         self.start_rmfiles()
+        self.start_jsonfilereaders()
 
     def stop(self):
         self.stop_dircheckers()
