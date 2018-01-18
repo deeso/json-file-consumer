@@ -119,59 +119,60 @@ class JsonConsumerService(object):
             self.rmfiles.stop()
 
     def dirchecker_poll(self):
-        while self.keep_running:
-            data = self.read_dircheckers_output()
-            if len(data) == 0:
-                time.sleep(self.poll_time)
-                continue
-            logger.info("Read %d records from dircheckers" % len(data))
-            inserted = 0
-            for d in data:
-                fname = d['filename'] if 'filename' in d else None
-                if fname is not None and os.path.isfile(fname):
-                    inserted += 1
-                    self.add_file_jsonfilereader(d['filename'])
-
-            logger.info("Inserted %d records into jsonfilereaders" % inserted)
-
-    def add_file_jsonfilereader(self, filename):
-        if len(self.jsonfilereaders) == 0:
-            logger.error("No jsonfilereaders have been defined")
-        jfr = self.jsonfilereaders[self.jfr_pos % self.l_jfr_pos]
-        # jfr = self.jsonfilereaders[0]
-        jfr.add_filename(filename)
-        self.jfr_pos += 1
-
-    def jsonfilereaders_poll(self):
         tid = 0
         while self.keep_running:
-            data = self.read_jsonfilereaders_output()
-            if len(data) == 0:
+            json_msgs = self.dc_read_output()
+            if len(json_msgs) == 0:
                 time.sleep(self.poll_time)
                 continue
-            logger.debug("Read %d records from the JSON filereader" % len(data))
-            rmed_files = 0
-            elkjsonsubmitted = 0
-            for d in data:
-                json_lines = d['json_lines'] if 'json_lines' in d else None
-                filename = d['filename'] if 'filename' in d else None
-                status = d['status'] if 'status' in d else None
-                tid = d['tid'] if 'tid' in d else tid
-                if self.rmfiles is not None and status == 'complete':
-                    self.rmfiles.add_filename(tid, filename)
-                    rmed_files += 1
+            logger.info("Read %d records from dircheckers" % len(json_msgs))
+            inserted = 0
+            for json_msg in json_msgs:
+                fname = json_msg.get('filename', None)
+                tid_msg = "%s-%s" % (tid, fname)
+                tid += 1
+                if 'tid' not in json_msg:
+                    json_msg['tid'] = tid_msg
 
-                if len(json_lines) > 0:
-                    self.add_json_line_elksubmitjson(tid, json_lines)
-                    elkjsonsubmitted += len(json_lines)
-                    tid += 1
+                if fname is not None and os.path.isfile(fname):
+                    self.jfr_add_json_msg(json_msg)
+                    inserted += 1
 
-            logger.debug("Inserted %d records into rmfiles queue" % rmed_files)
-            logger.debug("Inserted %d records into elkjsonsubmitted queue" % elkjsonsubmitted)
+            logger.info("Submitted %d records from parsing" % inserted)
+
+    def jfr_add_json_msg(self, json_msg):
+        if len(self.jsonfilereaders) == 0:
+            logger.error("No jsonfilereaders have been defined")
+            raise Exception("Unable to service JSON log file")
+
+        jfr = self.jsonfilereaders[self.jfr_pos % self.l_jfr_pos]
+        # jfr = self.jsonfilereaders[0]
+        jfr.add_json_msg(json_msg)
+        self.jfr_pos += 1
+        return True
+
+    def rmf_add_json_msg(self, json_msg):
+        if self.rmfiles is None:
+            return False
+
+        if 'status' in json_msg and\
+           json_msg['status'] == 'complete':
+            self.rmfiles.add_json_msg(json_msg)
+
+    def jsonfilereaders_poll(self):
+        while self.keep_running:
+            json_msgs = self.jfr_read_output()
+            if len(json_msgs) == 0:
+                time.sleep(self.poll_time)
+                continue
+            for json_msg in json_msgs:
+                self.rmf_add_json_msg(json_msg)
+                self.esj_add_json_msg(json_msg)
 
     def rmfiles_poll(self):
+        lm = "Remove file completed for %s tid: %s removed: %s error: %s"
         while self.keep_running:
-            data = self.read_rmfiles_output()
+            data = self.rmf_read_output()
             if len(data) == 0:
                 time.sleep(self.poll_time)
             for d in data:
@@ -179,15 +180,15 @@ class JsonConsumerService(object):
                 removed = d.get('removed', 'unknown')
                 error = d.get('error', None)
                 filename = d.get('filename', 'unknown')
-                logger.debug("Remove file completed for %s tid: %s removed: %s error: %s" % (filename, tid, removed, error))
+                logger.debug(lm % (filename, tid, removed, error))
 
-    def add_json_line_elksubmitjson(self, tid, json_lines):
+    def esj_add_json_msg(self, json_msg):
         for esj in self.elksubmitjsons:
-            esj.add_json_datas(tid, json_lines)
+            esj.add_json_msg(json_msg)
 
     def elksubmitjson_poll(self):
         while self.keep_running:
-            data = self.read_elksubmitjson_output()
+            data = self.esj_read_output()
             if len(data) == 0:
                 time.sleep(self.poll_time)
                 continue
@@ -210,48 +211,26 @@ class JsonConsumerService(object):
         self.stop_rmfiles()
         self.keep_running = False
 
-    def read_jsonfilereaders_output(self):
+    def generic_read_queue(self, objs):
         out_data = []
-        for obj in self.jsonfilereaders:
-            while True:
-                data = obj.read_outqueue()
-                if len(data) == 0:
-                    break
-                out_data = out_data + data
+        for obj in objs:
+            json_msg = obj.read_outqueue()
+            if json_msg is None:
+                continue
+            out_data.append(json_msg)
         return out_data
 
-    def read_dircheckers_output(self):
-        out_data = []
-        for obj in self.dircheckers:
-            while True:
-                data = obj.read_outqueue()
-                if len(data) == 0:
-                    break
-                out_data = out_data + data
-        return out_data
+    def jfr_read_output(self):
+        return self.generic_read_queue(self.jsonfilereaders)
 
-    def read_rmfiles_output(self):
-        out_data = []
-        if self.rmfiles is None:
-            return out_data
+    def dc_read_output(self):
+        return self.generic_read_queue(self.dircheckers)
 
-        obj = self.rmfiles
-        while True:
-            data = obj.read_outqueue()
-            if len(data) == 0:
-                break
-            out_data = out_data + data
-        return out_data
+    def rmf_read_output(self):
+        return self.generic_read_queue([self.rmfiles, ])
 
-    def read_elksubmitjson_output(self):
-        out_data = []
-        for obj in self.elksubmitjsons:
-            while True:
-                data = obj.read_outqueue()
-                if len(data) == 0:
-                    break
-                out_data = out_data + data
-        return out_data
+    def esj_read_output(self):
+        return self.generic_read_queue(self.elksubmitjsons)
 
     @classmethod
     def parse_toml_file(cls, toml_file):
