@@ -91,7 +91,7 @@ class JsonConsumerService(object):
 
     def start_rmfiles(self):
         if self.rmfiles is not None:
-            logger.info("Starting the file rm'ers")
+            logger.info("Starting the file removers")
             self.rmfiles.start()
             t = Thread(target=self.rmfiles_poll)
             self.rmfiles_poll_thread = t
@@ -160,10 +160,11 @@ class JsonConsumerService(object):
             return False
 
         fname = json_msg.get('filename', None)
+        allowed_to_manip = json_msg.get('allowed_to_manip', False)
+
         if fname is not None:
             logger.debug("preparing to remove: %s" % fname)
-        if 'status' in json_msg and\
-           json_msg['status'] == 'complete':
+        if allowed_to_manip:
             self.rmfiles.add_json_msg(json_msg)
 
     def jsonfilereaders_poll(self):
