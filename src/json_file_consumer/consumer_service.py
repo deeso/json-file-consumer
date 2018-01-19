@@ -294,6 +294,8 @@ class JsonConsumerService(object):
         block = cs_toml.get('rmfiles', None)
         if block is not None:
             rmfiles = cls.from_toml(block)
+            # logger.debug("rmfiles block = %s" % str(block))
+            # logger.debug("rmfiles value = %s" % str(rmfiles))
 
         kargs = {
             'dircheckers': dircheckers,
