@@ -90,13 +90,13 @@ class JsonConsumerService(object):
         logger.info("Starting the json submitters..completed")
 
     def start_rmfiles(self):
-        logger.info("Starting the file rm'ers")
         if self.rmfiles is not None:
+            logger.info("Starting the file rm'ers")
             self.rmfiles.start()
             t = Thread(target=self.rmfiles_poll)
             self.rmfiles_poll_thread = t
             t.start()
-        logger.info("Starting the file removers..completed")
+            logger.info("Starting the file removers..completed")
 
     def stop_dircheckers(self):
         logger.info("Stopping the dircheckers")
@@ -120,6 +120,7 @@ class JsonConsumerService(object):
 
     def dirchecker_poll(self):
         tid = 0
+        found_files = set()
         while self.keep_running:
             json_msgs = self.dc_read_output()
             if len(json_msgs) == 0:
@@ -129,12 +130,16 @@ class JsonConsumerService(object):
             inserted = 0
             for json_msg in json_msgs:
                 fname = json_msg.get('filename', None)
+                if fname is None or fname in found_files:
+                    continue
+
+                found_files.add(fname)
                 tid_msg = "%s-%s" % (tid, fname)
                 tid += 1
                 if 'tid' not in json_msg:
                     json_msg['tid'] = tid_msg
 
-                if fname is not None and os.path.isfile(fname):
+                if os.path.isfile(fname):
                     self.jfr_add_json_msg(json_msg)
                     inserted += 1
 
@@ -155,6 +160,9 @@ class JsonConsumerService(object):
         if self.rmfiles is None:
             return False
 
+        fname = json_msg.get('filename', None)
+        if fname is not None:
+            logger.debug("preparing to remove: %s" % fname)
         if 'status' in json_msg and\
            json_msg['status'] == 'complete':
             self.rmfiles.add_json_msg(json_msg)
