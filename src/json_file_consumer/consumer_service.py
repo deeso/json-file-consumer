@@ -151,7 +151,6 @@ class JsonConsumerService(object):
             raise Exception("Unable to service JSON log file")
 
         jfr = self.jsonfilereaders[self.jfr_pos % self.l_jfr_pos]
-        # jfr = self.jsonfilereaders[0]
         jfr.add_json_msg(json_msg)
         self.jfr_pos += 1
         return True
@@ -170,11 +169,18 @@ class JsonConsumerService(object):
     def jsonfilereaders_poll(self):
         while self.keep_running:
             json_msgs = self.jfr_read_output()
+            m = "jsonfilereaders_poll: Recieved %d messages for processing"
+            logger.debug(m % len(json_msgs))
             if len(json_msgs) == 0:
                 time.sleep(self.poll_time)
                 continue
             for json_msg in json_msgs:
-                self.rmf_add_json_msg(json_msg)
+                completed = json_msg.get('completed', False)
+                fname = json_msg.get('filename', None)
+                if completed:
+                    m = "%s is ready to be removed, sending it to rm task"
+                    logger.debug(m % fname)
+                    self.rmf_add_json_msg(json_msg)
                 self.esj_add_json_msg(json_msg)
 
     def rmfiles_poll(self):
@@ -183,6 +189,7 @@ class JsonConsumerService(object):
             data = self.rmf_read_output()
             if len(data) == 0:
                 time.sleep(self.poll_time)
+                continue
             for d in data:
                 tid = d.get('tid', None)
                 removed = d.get('removed', 'unknown')
@@ -221,11 +228,17 @@ class JsonConsumerService(object):
 
     def generic_read_queue(self, objs):
         out_data = []
-        for obj in objs:
-            json_msg = obj.read_outqueue()
-            if json_msg is None:
-                continue
-            out_data.append(json_msg)
+        while len(out_data) < 1000:
+            empty = 0
+            for obj in objs:
+                json_msg = obj.read_outqueue()
+                if json_msg is None:
+                    empty += 1
+                    continue
+                out_data.append(json_msg)
+
+            if empty == len(objs):
+                break
         return out_data
 
     def jfr_read_output(self):
