@@ -256,12 +256,14 @@ class JsonConsumerService(object):
     def start(self):
         self.keep_running = True
         self.start_dircheckers()
+        self.start_jsonupdates()
         self.start_elksubmitjsons()
         self.start_rmfiles()
         self.start_jsonfilereaders()
 
     def stop(self):
         self.stop_dircheckers()
+        self.stop_jsonupdates()
         self.stop_jsonfilereaders()
         self.stop_elksubmitjsons()
         self.stop_rmfiles()
