@@ -293,6 +293,9 @@ class JsonConsumerService(object):
     def rmf_read_output(self):
         return self.generic_read_queue([self.rmfiles, ])
 
+    def jsu_read_output(self):
+        return self.generic_read_queue([self.jsonupdates, ])
+
     def esj_read_output(self):
         return self.generic_read_queue(self.elksubmitjsons)
 
