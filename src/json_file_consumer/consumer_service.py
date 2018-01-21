@@ -318,44 +318,48 @@ class JsonConsumerService(object):
         elksubmitjsons = []
         jsonupdates = None
 
-        cls = TASK_BLOX_MAPPER.get('dirchecker')
         blocks = cs_toml.get('dircheckers', {})
         for block in blocks.values():
             t = block.get('task')
-            if t != cls.key():
+            cls = TASK_BLOX_MAPPER.get(t, None)
+            if cls is None:
                 continue
             dc = cls.parse_toml(block)
             dircheckers.append(dc)
 
-        cls = TASK_BLOX_MAPPER.get('readjsonfile')
         blocks = cs_toml.get('readjsonfiles', {})
         for block in blocks.values():
             t = block.get('task')
-            if t != cls.key():
+            cls = TASK_BLOX_MAPPER.get(t, None)
+            if cls is None:
                 continue
             dc = cls.parse_toml(block)
             jsonfilereaders.append(dc)
 
-        cls = TASK_BLOX_MAPPER.get('elksubmitjson')
         blocks = cs_toml.get('elksubmitjsons', {})
         for block in blocks.values():
             t = block.get('task')
-            if t != cls.key():
+            cls = TASK_BLOX_MAPPER.get(t, None)
+            if cls is None:
                 continue
             dc = cls.parse_toml(block)
             elksubmitjsons.append(dc)
 
-        cls = TASK_BLOX_MAPPER.get('jsonupdate')
         blocks = cs_toml.get('jsonupdates', None)
-        if block is not None:
-            task = block.get('task')
-            cls = TASK_BLOX_MAPPER.get(task)
-            jsonupdates = cls.parse_toml(block)
+        if blocks is not None:
+            t = blocks.get('task')
+            cls = TASK_BLOX_MAPPER.get(t, None)
+            if cls is None:
+                continue
+            jsonupdates = cls.parse_toml(blocks)
 
-        cls = TASK_BLOX_MAPPER.get('rmfiles')
-        block = cs_toml.get('rmfiles', None)
-        if block is not None:
-            rmfiles = cls.parse_toml(block)
+        blocks = cs_toml.get('rmfiles', None)
+        if blocks is not None:
+            t = blocks.get('task')
+            cls = TASK_BLOX_MAPPER.get(t, None)
+            if cls is None:
+                continue
+            rmfiles = cls.parse_toml(blocks)
             # logger.debug("rmfiles block = %s" % str(block))
             # logger.debug("rmfiles value = %s" % str(rmfiles))
 
