@@ -137,6 +137,23 @@ class JsonConsumerService(object):
         if self.rmfiles is not None:
             self.rmfiles.stop()
 
+    def generic_msg_add(self, json_msg, objs, name):
+        bm = "Adding msg to %s queues" % name
+        fm = "Failed to add msgs to %s queues" % name
+        em = "Successfully to added msgs to %s queues" % name
+
+        logger.debug(bm)
+        added = False
+        for obj in objs:
+            obj.add_json_msg(json_msg)
+            added = True
+
+        if not added:
+            logger.debug(fm)
+        else:
+            logger.debug(em)
+        return added
+
     def dirchecker_poll(self):
         tid = 0
         found_files = set()
@@ -170,9 +187,8 @@ class JsonConsumerService(object):
             raise Exception("Unable to service JSON log file")
 
         jfr = self.jsonfilereaders[self.jfr_pos % self.l_jfr_pos]
-        jfr.add_json_msg(json_msg)
         self.jfr_pos += 1
-        return True
+        return self.generic_msg_add(json_msg, [jfr, ], 'jsonfilereaders')
 
     def rmf_add_json_msg(self, json_msg):
         if self.rmfiles is None:
@@ -184,7 +200,8 @@ class JsonConsumerService(object):
         if fname is not None:
             logger.debug("preparing to remove: %s" % fname)
         if allowed_to_manip:
-            self.rmfiles.add_json_msg(json_msg)
+            return self.generic_msg_add(json_msg, [self.rmfiles, ], 'rmfiles')
+        return False
 
     def jsonfilereaders_poll(self):
         while self.keep_running:
@@ -234,8 +251,8 @@ class JsonConsumerService(object):
                 logger.debug(lm % (filename, tid, removed, error))
 
     def esj_add_json_msg(self, json_msg):
-        for esj in self.elksubmitjsons:
-            esj.add_json_msg(json_msg)
+        return self.generic_msg_add(json_msg, [self.elksubmitjsons, ],
+                                    'elksubmitjsons')
 
     def jsu_add_json_msg(self, json_msg):
         for jsu in [self.jsonupdates, ]:
