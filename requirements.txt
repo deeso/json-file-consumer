@@ -1,4 +1,5 @@
 toml
 regex
-https://github.com/deeso/task-blox/tarball/master#egg=task-blox
+dpath
 https://github.com/deeso/manipin-json/tarball/master#egg=manipin-json
+https://github.com/deeso/task-blox/tarball/master#egg=task-blox

@@ -348,6 +348,8 @@ class JsonConsumerService(object):
         cls = TASK_BLOX_MAPPER.get('jsonupdate')
         blocks = cs_toml.get('jsonupdates', None)
         if block is not None:
+            task = block.get('task')
+            cls = TASK_BLOX_MAPPER.get(task)
             jsonupdates = cls.parse_toml(block)
 
         cls = TASK_BLOX_MAPPER.get('rmfiles')
