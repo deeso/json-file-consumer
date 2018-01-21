@@ -349,17 +349,15 @@ class JsonConsumerService(object):
         if blocks is not None:
             t = blocks.get('task')
             cls = TASK_BLOX_MAPPER.get(t, None)
-            if cls is None:
-                continue
-            jsonupdates = cls.parse_toml(blocks)
+            if cls is not None:
+                jsonupdates = cls.parse_toml(blocks)
 
         blocks = cs_toml.get('rmfiles', None)
         if blocks is not None:
             t = blocks.get('task')
             cls = TASK_BLOX_MAPPER.get(t, None)
-            if cls is None:
-                continue
-            rmfiles = cls.parse_toml(blocks)
+            if cls is not None:
+                rmfiles = cls.parse_toml(blocks)
             # logger.debug("rmfiles block = %s" % str(block))
             # logger.debug("rmfiles value = %s" % str(rmfiles))
 
