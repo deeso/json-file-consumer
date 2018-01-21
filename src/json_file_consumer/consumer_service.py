@@ -17,8 +17,8 @@ class JsonConsumerService(object):
         return cls.KEY.lower()
 
     def __init__(self, dircheckers=[], jsonfilereaders=[],
-                 rmfiles=None, elksubmitjsons=[], poll_time=20,
-                 log_level=logging.DEBUG, log_name=KEY.lower()):
+                 rmfiles=None, jsonupdates=None, elksubmitjsons=[],
+                 poll_time=20, log_level=logging.DEBUG, log_name=KEY.lower()):
 
         logger.init_logger(name=log_name, log_level=log_level)
         self.poll_time = poll_time
@@ -35,6 +35,7 @@ class JsonConsumerService(object):
         #     raise Exception("JSON File readers tasks is need to be useful")
 
         self.rmfiles = rmfiles
+        self.jsonupdates = jsonupdates
 
         # for round robin dispatch
         self.esj_pos = 0
@@ -51,6 +52,7 @@ class JsonConsumerService(object):
         self.jsonreader_poll_thread = None
         self.rmfiles_poll_thread = None
         self.elksubmit_poll_thread = None
+        self.jsonupdate_poll_thread = None
 
     def run_forever(self):
         self.start()
@@ -79,6 +81,18 @@ class JsonConsumerService(object):
         t.start()
         logger.info("Starting the file readers..completed")
 
+    def start_jsonupdates(self):
+        if self.jsonupdates is not None:
+            self.keep_running = True
+            logger.info("Starting the jsonupdates readers")
+            for obj in [self.jsonupdates, ]:
+                obj.start()
+
+            t = Thread(target=self.jsonupdate_poll)
+            self.jsonupdate_poll_thread = t
+            t.start()
+            logger.info("Starting the jsonupdates..completed")
+
     def start_elksubmitjsons(self):
         logger.info("Starting the elk submitters")
         for obj in self.elksubmitjsons:
@@ -106,6 +120,11 @@ class JsonConsumerService(object):
     def stop_jsonfilereaders(self):
         logger.info("Stopping the json readers")
         for obj in self.jsonfilereaders:
+            obj.stop()
+
+    def stop_jsonupdates(self):
+        logger.info("Stopping the elk submitters")
+        for obj in [self.jsonupdates, ]:
             obj.stop()
 
     def stop_elksubmitjsons(self):
@@ -182,6 +201,22 @@ class JsonConsumerService(object):
                     m = "%s is ready to be removed, sending it to rm task"
                     logger.debug(m % fname)
                     self.rmf_add_json_msg(json_msg)
+
+                if self.jsonupdates is not None:
+                    self.jsu_add_json_msg(json_msg)
+                else:
+                    self.esj_add_json_msg(json_msg)
+
+    def jsonupdate_poll(self):
+
+        while self.keep_running:
+            json_msgs = self.jsu_read_output()
+            m = "jsonupdate_poll: Recieved %d messages for processing"
+            logger.debug(m % len(json_msgs))
+            if len(json_msgs) == 0:
+                time.sleep(self.poll_time)
+                continue
+            for json_msg in json_msgs:
                 self.esj_add_json_msg(json_msg)
 
     def rmfiles_poll(self):
@@ -201,6 +236,11 @@ class JsonConsumerService(object):
     def esj_add_json_msg(self, json_msg):
         for esj in self.elksubmitjsons:
             esj.add_json_msg(json_msg)
+
+    def jsu_add_json_msg(self, json_msg):
+        for jsu in [self.jsonupdates, ]:
+            if jsu is not None:
+                jsu.add_json_msg(json_msg)
 
     def elksubmitjson_poll(self):
         while self.keep_running:
@@ -276,6 +316,7 @@ class JsonConsumerService(object):
         jsonfilereaders = []
         rmfiles = None
         elksubmitjsons = []
+        jsonupdates = None
 
         cls = TASK_BLOX_MAPPER.get('dirchecker')
         blocks = cs_toml.get('dircheckers', {})
@@ -304,6 +345,11 @@ class JsonConsumerService(object):
             dc = cls.parse_toml(block)
             elksubmitjsons.append(dc)
 
+        cls = TASK_BLOX_MAPPER.get('jsonupdate')
+        blocks = cs_toml.get('jsonupdates', None)
+        if block is not None:
+            jsonupdates = cls.parse_toml(block)
+
         cls = TASK_BLOX_MAPPER.get('rmfiles')
         block = cs_toml.get('rmfiles', None)
         if block is not None:
@@ -316,6 +362,7 @@ class JsonConsumerService(object):
             'jsonfilereaders': jsonfilereaders,
             'rmfiles': rmfiles,
             'elksubmitjsons': elksubmitjsons,
+            'jsonupdates': jsonupdates,
             'poll_time': poll_time,
             'log_level': log_level,
             'log_name': log_name
