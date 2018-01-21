@@ -255,9 +255,10 @@ class JsonConsumerService(object):
                                     'elksubmitjsons')
 
     def jsu_add_json_msg(self, json_msg):
-        for jsu in [self.jsonupdates, ]:
-            if jsu is not None:
-                jsu.add_json_msg(json_msg)
+        if self.jsonupdates is None:
+            return False
+        return self.generic_msg_add(json_msg, [self.jsonupdates, ],
+                                    'elksubmitjsons')
 
     def elksubmitjson_poll(self):
         while self.keep_running:
