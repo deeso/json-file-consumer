@@ -283,7 +283,7 @@ class JsonConsumerService(object):
             t = block.get('task')
             if t != cls.key():
                 continue
-            dc = cls.from_toml(block)
+            dc = cls.parse_toml(block)
             dircheckers.append(dc)
 
         cls = TASK_BLOX_MAPPER.get('readjsonfile')
@@ -292,7 +292,7 @@ class JsonConsumerService(object):
             t = block.get('task')
             if t != cls.key():
                 continue
-            dc = cls.from_toml(block)
+            dc = cls.parse_toml(block)
             jsonfilereaders.append(dc)
 
         cls = TASK_BLOX_MAPPER.get('elksubmitjson')
@@ -301,13 +301,13 @@ class JsonConsumerService(object):
             t = block.get('task')
             if t != cls.key():
                 continue
-            dc = cls.from_toml(block)
+            dc = cls.parse_toml(block)
             elksubmitjsons.append(dc)
 
         cls = TASK_BLOX_MAPPER.get('rmfiles')
         block = cs_toml.get('rmfiles', None)
         if block is not None:
-            rmfiles = cls.from_toml(block)
+            rmfiles = cls.parse_toml(block)
             # logger.debug("rmfiles block = %s" % str(block))
             # logger.debug("rmfiles value = %s" % str(rmfiles))
 
