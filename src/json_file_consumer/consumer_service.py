@@ -220,7 +220,7 @@ class JsonConsumerService(object):
                     self.rmf_add_json_msg(json_msg)
 
                 if self.jsonupdates is not None:
-                    print("Adding message tp jsu: %s" % json_msg)
+                    # print("Adding message tp jsu: %s" % json_msg)
                     self.jsu_add_json_msg(json_msg)
                 else:
                     self.esj_add_json_msg(json_msg)
