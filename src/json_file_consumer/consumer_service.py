@@ -251,7 +251,7 @@ class JsonConsumerService(object):
                 logger.debug(lm % (filename, tid, removed, error))
 
     def esj_add_json_msg(self, json_msg):
-        return self.generic_msg_add(json_msg, [self.elksubmitjsons, ],
+        return self.generic_msg_add(json_msg, self.elksubmitjsons,
                                     'elksubmitjsons')
 
     def jsu_add_json_msg(self, json_msg):
