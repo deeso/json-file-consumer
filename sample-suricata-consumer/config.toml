@@ -7,7 +7,7 @@
 # NOTSET       0
 [json-file-consumer]
     log-name = 'suricata-json-consumer'
-    log-level = 30 # INFO
+    log-level = 20 # INFO
     [json-file-consumer.dircheckers]
         [json-file-consumer.dircheckers.0]
             name = '0'
@@ -15,7 +15,7 @@
             target-directory = '/var/log/suricata/'
             name-pattern = '.*eve-\d{4}-\d{2}-\d{2}-\d{2}:\d{2}\.json'
             poll-time = 20
-            log-level = 30 # INFO
+            log-level = 20 # INFO
 
 
     [json-file-consumer.readjsonfiles]
@@ -23,13 +23,13 @@
             name = '0'
             task = 'readjsonfile'
             poll-time = 20
-            log-level = 30 # INFO
+            log-level = 20 # INFO
 
         [json-file-consumer.readjsonfiles.1]
             name = '1'
             task = 'readjsonfile'
             poll-time = 20
-            log-level = 30 # INFO
+            log-level = 20 # INFO
 
     [json-file-consumer.elksubmitjsons]
         [json-file-consumer.elksubmitjsons.0]
@@ -37,12 +37,12 @@
             poll-time = 20
             host = '10.18.120.11'
             port = 5002
-            log-level = 30 # INFO
+            log-level = 20 # INFO
 
     [json-file-consumer.rmfiles]
         task = 'rmfiles'
         poll-time = 20
-        log-level = 30 # INFO
+        log-level = 20 # INFO
 
     [json-file-consumer.jsonupdates]
         task = 'keyedjsonupdate'
