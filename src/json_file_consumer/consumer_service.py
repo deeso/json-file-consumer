@@ -220,6 +220,7 @@ class JsonConsumerService(object):
                     self.rmf_add_json_msg(json_msg)
 
                 if self.jsonupdates is not None:
+                    print("Adding message tp jsu: %s" % json_msg)
                     self.jsu_add_json_msg(json_msg)
                 else:
                     self.esj_add_json_msg(json_msg)
@@ -258,7 +259,7 @@ class JsonConsumerService(object):
         if self.jsonupdates is None:
             return False
         return self.generic_msg_add(json_msg, [self.jsonupdates, ],
-                                    'elksubmitjsons')
+                                    'jsonupdates')
 
     def elksubmitjson_poll(self):
         while self.keep_running:
