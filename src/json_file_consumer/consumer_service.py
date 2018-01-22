@@ -162,7 +162,7 @@ class JsonConsumerService(object):
             if len(json_msgs) == 0:
                 time.sleep(self.poll_time)
                 continue
-            logger.info("Read %d records from dircheckers" % len(json_msgs))
+            logger.debug("Read %d records from dircheckers" % len(json_msgs))
             inserted = 0
             for json_msg in json_msgs:
                 fname = json_msg.get('filename', None)
@@ -179,7 +179,7 @@ class JsonConsumerService(object):
                     self.jfr_add_json_msg(json_msg)
                     inserted += 1
 
-            logger.info("Submitted %d records from parsing" % inserted)
+            logger.debug("Submitted %d records from parsing" % inserted)
 
     def jfr_add_json_msg(self, json_msg):
         if len(self.jsonfilereaders) == 0:
@@ -229,7 +229,7 @@ class JsonConsumerService(object):
         while self.keep_running:
             json_msgs = self.jsu_read_output()
             m = "jsonupdate_poll: Recieved %d messages for processing"
-            logger.info(m % len(json_msgs))
+            logger.debug(m % len(json_msgs))
             if len(json_msgs) == 0:
                 time.sleep(self.poll_time)
                 continue
@@ -262,11 +262,14 @@ class JsonConsumerService(object):
 
     def elksubmitjson_poll(self):
         while self.keep_running:
-            data = self.esj_read_output()
-            if len(data) == 0:
+            json_msgs = self.esj_read_output()
+            m = "elksubmitjson_poll: Recieved %d messages for processing"
+            logger.debug(m % len(json_msgs))
+
+            if len(json_msgs) == 0:
                 time.sleep(self.poll_time)
                 continue
-            for d in data:
+            for d in json_msgs:
                 tid = d.get('tid', None)
                 status = d.get('status', None)
                 logger.debug("Elk Submit completed tid: %s status: %s" % (tid, status))

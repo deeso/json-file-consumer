@@ -1,4 +1,13 @@
+# Level   Numeric
+# CRITICAL    50
+# ERROR       40
+# WARNING     30
+# INFO        20
+# DEBUG       10
+# NOTSET       0
 [json-file-consumer]
+    log-name = 'suricata-json-consumer'
+    log-level = 30 # INFO
     [json-file-consumer.dircheckers]
         [json-file-consumer.dircheckers.0]
             name = '0'
@@ -6,25 +15,92 @@
             target-directory = '/var/log/suricata/'
             name-pattern = '.*eve-\d{4}-\d{2}-\d{2}-\d{2}:\d{2}\.json'
             poll-time = 20
+            log-level = 30 # INFO
+
 
     [json-file-consumer.readjsonfiles]
         [json-file-consumer.readjsonfiles.0]
             name = '0'
-            task = 'readjsonfiles'
+            task = 'readjsonfile'
             poll-time = 20
+            log-level = 30 # INFO
 
         [json-file-consumer.readjsonfiles.1]
             name = '1'
-            task = 'readjsonfiles'
+            task = 'readjsonfile'
             poll-time = 20
+            log-level = 30 # INFO
 
-    [json-file-consumer.elksubmitjson]
-        [json-file-consumer.elksubmitjson.0]
+    [json-file-consumer.elksubmitjsons]
+        [json-file-consumer.elksubmitjsons.0]
             task = 'elksubmitjson'
             poll-time = 20
-            host = 'REPLACE_WITH_HOSTNAME_OR_IP'
+            host = '10.18.120.11'
             port = 5002
+            log-level = 30 # INFO
 
     [json-file-consumer.rmfiles]
         task = 'rmfiles'
         poll-time = 20
+        log-level = 30 # INFO
+
+    [json-file-consumer.jsonupdates]
+        task = 'keyedjsonupdate'
+        name = 'enrich-event-info'
+        poll-time = 20
+        log-level = 20
+        logger-name = 'jsonupdate-loggger'
+        [json-file-consumer.jsonupdates.json-enrichers.vlan-name]
+            name = 'vlan-name'
+            dpath-check = 'vlan'
+            dpath-upsert =  'vlan-name'
+            dpath-extract-key = 'vlan'
+            default-value-key = 'UNKNOWN'
+            [json-file-consumer.jsonupdates.json-enrichers.vlan-name.value-dict]
+                1 = "management"
+                2 = "dmz"
+                3 = "production"
+                4 = "voice"
+                5 = "wireless"
+                UNKNOWN = "UNKNOWN"
+
+        [json-file-consumer.jsonupdates.json-enrichers.vlan-nic]
+            name = 'vlan-nic'
+            dpath-check = 'vlan'
+            dpath-upsert =  'router-nic'
+            dpath-extract-key = 'vlan'
+            default-value-key = 'UNKNOWN'
+            [json-file-consumer.jsonupdates.json-enrichers.vlan-nic.value-dict]
+                2 = "vtnet1"
+                3 = "vtnet2"
+                4 = "vtnet2"
+                5 = "vtnet3"
+                UNKNOWN = "UNKNOWN"
+
+        [json-file-consumer.jsonupdates.json-enrichers.router-nic-name]
+            name = 'router-nic-name'
+            dpath-check = 'vlan'
+            dpath-upsert =  'router-nic-name'
+            dpath-extract-key = 'vlan'
+            default-value-key = 'UNKNOWN'
+            [json-file-consumer.jsonupdates.json-enrichers.router-nic-name.value-dict]
+                1 = "wan"
+                2 = "opt1"
+                3 = "lan"
+                4 = "lan"
+                5 = "opt2"
+                UNKNOWN = "UNKNOWN"
+
+        [json-file-consumer.jsonupdates.json-enrichers.router-nic-tap]
+            name = 'router-nic-tap'
+            dpath-check = 'in_iface'
+            dpath-upsert =  'router-nic-tap'
+            dpath-extract-key = 'in_iface'
+            default-value-key = 'UNKNOWN'
+            [json-file-consumer.jsonupdates.json-enrichers.router-nic-tap.value-dict]
+                ens2 = "vtnet0"
+                ens3 = "vtnet1"
+                ens4 = "vtnet2"
+                ens4 = "vtnet3"
+                ens5 = "vtnet4"
+                UNKNOWN = "UNKNOWN"
