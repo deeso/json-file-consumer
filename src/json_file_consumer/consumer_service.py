@@ -226,11 +226,10 @@ class JsonConsumerService(object):
                     self.esj_add_json_msg(json_msg)
 
     def jsonupdate_poll(self):
-
         while self.keep_running:
             json_msgs = self.jsu_read_output()
             m = "jsonupdate_poll: Recieved %d messages for processing"
-            logger.debug(m % len(json_msgs))
+            logger.info(m % len(json_msgs))
             if len(json_msgs) == 0:
                 time.sleep(self.poll_time)
                 continue
