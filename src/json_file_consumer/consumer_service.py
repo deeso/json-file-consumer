@@ -18,7 +18,8 @@ class JsonConsumerService(object):
 
     def __init__(self, dircheckers=[], jsonfilereaders=[],
                  rmfiles=None, jsonupdates=None, elksubmitjsons=[],
-                 poll_time=20, log_level=logging.DEBUG, log_name=KEY.lower()):
+                 poll_time=20, log_level=logging.DEBUG, log_name=KEY.lower(),
+                 pgsubmitjsonnc=None):
 
         logger.init_logger(name=log_name, log_level=log_level)
         self.poll_time = poll_time
@@ -40,6 +41,8 @@ class JsonConsumerService(object):
         # for round robin dispatch
         self.esj_pos = 0
         self.elksubmitjsons = elksubmitjsons
+        self.pgsubmitjsonnc = pgsubmitjsonnc
+
         # if len(elksubmitjsons) == 0:
         #     raise Exception("Elk submit jsons tasks is need to be useful")
 
@@ -52,6 +55,7 @@ class JsonConsumerService(object):
         self.jsonreader_poll_thread = None
         self.rmfiles_poll_thread = None
         self.elksubmit_poll_thread = None
+        self.pgsubmitjsonnc_poll_thread = None
         self.jsonupdate_poll_thread = None
 
     def run_forever(self):
@@ -103,6 +107,16 @@ class JsonConsumerService(object):
         t.start()
         logger.info("Starting the json submitters..completed")
 
+    def start_pgsubmitjsonnc(self):
+        if self.pgsubmitjsonnc is not None:
+            logger.info("Starting the postgres submitters")
+            self.pgsubmitjsonnc.start()
+
+            t = Thread(target=self.pgsubmitjsonnc_poll)
+            self.pgsubmitjsonnc_poll_thread = t
+            t.start()
+            logger.info("Starting the json submitters..completed")
+
     def start_rmfiles(self):
         if self.rmfiles is not None:
             logger.info("Starting the file removers")
@@ -132,6 +146,11 @@ class JsonConsumerService(object):
         for obj in self.elksubmitjsons:
             obj.stop()
 
+    def stop_pgsubmitjsonnc(self):
+        logger.info("Stopping the postgres submitter")
+        if self.pgsubmitjsonnc is not None:
+            self.pgsubmitjsonnc.stop()
+
     def stop_rmfiles(self):
         logger.info("Stopping the rm'ers")
         if self.rmfiles is not None:
@@ -144,9 +163,15 @@ class JsonConsumerService(object):
 
         logger.debug(bm)
         added = False
+
+        # dont try to add a message if objs are None
+        if all([o is None for o in objs]):
+            return added
+
         for obj in objs:
-            obj.add_json_msg(json_msg)
-            added = True
+            if objs is not None:
+                obj.add_json_msg(json_msg)
+                added = True
 
         if not added:
             logger.debug(fm)
@@ -224,6 +249,7 @@ class JsonConsumerService(object):
                     self.jsu_add_json_msg(json_msg)
                 else:
                     self.esj_add_json_msg(json_msg)
+                    self.pgsj_add_json_msg(json_msg)
 
     def jsonupdate_poll(self):
         while self.keep_running:
@@ -235,6 +261,7 @@ class JsonConsumerService(object):
                 continue
             for json_msg in json_msgs:
                 self.esj_add_json_msg(json_msg)
+                self.pgsj_add_json_msg(json_msg)
 
     def rmfiles_poll(self):
         lm = "Remove file completed for %s tid: %s removed: %s error: %s"
@@ -253,6 +280,10 @@ class JsonConsumerService(object):
     def esj_add_json_msg(self, json_msg):
         return self.generic_msg_add(json_msg, self.elksubmitjsons,
                                     'elksubmitjsons')
+
+    def pgsj_add_json_msg(self, json_msg):
+        return self.generic_msg_add(json_msg, self.pgsubmitjsonnc,
+                                    'pgsubmitjsonnc')
 
     def jsu_add_json_msg(self, json_msg):
         if self.jsonupdates is None:
@@ -274,11 +305,26 @@ class JsonConsumerService(object):
                 status = d.get('status', None)
                 logger.debug("Elk Submit completed tid: %s status: %s" % (tid, status))
 
+    def pgsubmitjsonnc_poll(self):
+        while self.keep_running:
+            json_msgs = self.pgsj_read_output()
+            m = "pgsubmitjsonnc_poll: Recieved %d messages for processing"
+            logger.debug(m % len(json_msgs))
+
+            if len(json_msgs) == 0:
+                time.sleep(self.poll_time)
+                continue
+            for d in json_msgs:
+                tid = d.get('tid', None)
+                status = d.get('status', None)
+                logger.debug("Postgres Submit completed tid: %s status: %s" % (tid, status))
+
     def start(self):
         self.keep_running = True
         self.start_dircheckers()
         self.start_jsonupdates()
         self.start_elksubmitjsons()
+        self.start_pgsubmitjsonnc()
         self.start_rmfiles()
         self.start_jsonfilereaders()
 
@@ -287,6 +333,7 @@ class JsonConsumerService(object):
         self.stop_jsonupdates()
         self.stop_jsonfilereaders()
         self.stop_elksubmitjsons()
+        self.stop_pgsubmitjsonnc
         self.stop_rmfiles()
         self.keep_running = False
 
@@ -295,6 +342,8 @@ class JsonConsumerService(object):
         while len(out_data) < 1000:
             empty = 0
             for obj in objs:
+                if obj is None:
+                    continue
                 json_msg = obj.read_outqueue()
                 if json_msg is None:
                     empty += 1
@@ -319,6 +368,9 @@ class JsonConsumerService(object):
 
     def esj_read_output(self):
         return self.generic_read_queue(self.elksubmitjsons)
+
+    def pgsj_read_output(self):
+        return self.generic_read_queue([self.pgsubmitjsonnc, ])
 
     @classmethod
     def parse_toml_file(cls, toml_file):
@@ -387,6 +439,15 @@ class JsonConsumerService(object):
             # logger.debug("rmfiles block = %s" % str(block))
             # logger.debug("rmfiles value = %s" % str(rmfiles))
 
+        blocks = cs_toml.get('pgsubmitjsonnc', None)
+        if blocks is not None:
+            t = blocks.get('task')
+            cls = TASK_BLOX_MAPPER.get(t, None)
+            if cls is not None:
+                pgsubmitjsonnc = cls.parse_toml(blocks)
+            # logger.debug("rmfiles block = %s" % str(block))
+            # logger.debug("rmfiles value = %s" % str(rmfiles))
+
         kargs = {
             'dircheckers': dircheckers,
             'jsonfilereaders': jsonfilereaders,
@@ -395,6 +456,7 @@ class JsonConsumerService(object):
             'jsonupdates': jsonupdates,
             'poll_time': poll_time,
             'log_level': log_level,
-            'log_name': log_name
+            'log_name': log_name,
+            'pgsubmitjsonnc': pgsubmitjsonnc,
         }
         return this_cls(**kargs)
